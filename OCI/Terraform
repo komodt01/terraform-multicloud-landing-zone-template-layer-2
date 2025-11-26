@@ -1,0 +1,148 @@
+################################################
+# terraform/oci/provider.tf
+################################################
+
+provider "oci" {
+  region = var.region
+}
+
+
+################################################
+# terraform/oci/main.tf
+################################################
+
+terraform {
+  required_version = ">= 1.5.0"
+
+  required_providers {
+    oci = {
+      source  = "oracle/oci"
+      version = "~> 6.0"
+    }
+  }
+}
+
+resource "oci_core_vcn" "vcn" {
+  compartment_id = var.compartment_ocid
+  cidr_block     = var.vcn_cidr
+  display_name   = "${var.project_name}-vcn"
+}
+
+resource "oci_core_internet_gateway" "igw" {
+  compartment_id = var.compartment_ocid
+  display_name   = "${var.project_name}-igw"
+  vcn_id         = oci_core_vcn.vcn.id
+  enabled        = true
+}
+
+resource "oci_core_route_table" "public_rt" {
+  compartment_id = var.compartment_ocid
+  vcn_id         = oci_core_vcn.vcn.id
+  display_name   = "${var.project_name}-public-rt"
+
+  route_rules {
+    destination       = "0.0.0.0/0"
+    destination_type  = "CIDR_BLOCK"
+    network_entity_id = oci_core_internet_gateway.igw.id
+  }
+}
+
+resource "oci_core_subnet" "public" {
+  compartment_id            = var.compartment_ocid
+  vcn_id                    = oci_core_vcn.vcn.id
+  cidr_block                = var.public_subnet_cidr
+  display_name              = "${var.project_name}-public-subnet"
+  route_table_id            = oci_core_route_table.public_rt.id
+  prohibit_public_ip_on_vnic = false
+}
+
+resource "oci_core_subnet" "private" {
+  compartment_id            = var.compartment_ocid
+  vcn_id                    = oci_core_vcn.vcn.id
+  cidr_block                = var.private_subnet_cidr
+  display_name              = "${var.project_name}-private-subnet"
+  prohibit_public_ip_on_vnic = true
+}
+
+resource "oci_logging_log_group" "lg" {
+  compartment_id = var.compartment_ocid
+  display_name   = "${var.project_name}-log-group"
+}
+
+
+################################################
+# terraform/oci/variables.tf
+################################################
+
+variable "project_name" {
+  description = "Prefix for resource names."
+  type        = string
+}
+
+variable "tenant_ocid" {
+  description = "Tenancy OCID (not directly used yet, but useful for extension)."
+  type        = string
+}
+
+variable "compartment_ocid" {
+  description = "Compartment OCID where resources are created."
+  type        = string
+}
+
+variable "region" {
+  description = "OCI region."
+  type        = string
+  default     = "us-phoenix-1"
+}
+
+variable "vcn_cidr" {
+  description = "CIDR for the VCN."
+  type        = string
+  default     = "10.40.0.0/16"
+}
+
+variable "public_subnet_cidr" {
+  description = "CIDR for the public subnet."
+  type        = string
+  default     = "10.40.1.0/24"
+}
+
+variable "private_subnet_cidr" {
+  description = "CIDR for the private subnet."
+  type        = string
+  default     = "10.40.2.0/24"
+}
+
+
+################################################
+# terraform/oci/outputs.tf
+################################################
+
+output "vcn_id" {
+  description = "ID of the created VCN."
+  value       = oci_core_vcn.vcn.id
+}
+
+output "public_subnet_id" {
+  description = "ID of the public subnet."
+  value       = oci_core_subnet.public.id
+}
+
+output "private_subnet_id" {
+  description = "ID of the private subnet."
+  value       = oci_core_subnet.private.id
+}
+
+
+################################################
+# terraform/oci/terraform.tfvars.example
+################################################
+
+project_name     = "example-landingzone-oci"
+tenant_ocid      = "ocid1.tenancy.oc1..exampletenancy"
+compartment_ocid = "ocid1.compartment.oc1..examplecompartment"
+region           = "us-phoenix-1"
+
+vcn_cidr           = "10.40.0.0/16"
+public_subnet_cidr = "10.40.1.0/24"
+private_subnet_cidr = "10.40.2.0/24"
