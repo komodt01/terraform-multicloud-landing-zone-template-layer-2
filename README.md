@@ -1,6 +1,6 @@
 # Multicloud Landing Zone – Layer 2 (Terraform)
 
-This repository provides a multi-cloud **Layer-2 Landing Zone reference template** using Terraform for AWS, Azure, Google Cloud, and Oracle Cloud Infrastructure (OCI). This layer focuses on the secure account/subscription/project baseline—not organizational guardrails. 
+This repository provides a multi-cloud **Layer-2 Landing Zone reference template** using Terraform for AWS, Azure, Google Cloud, and Oracle Cloud Infrastructure (OCI). This layer focuses on the secure account/subscription/project baseline, not organizational guardrails. 
 
 Layer-2 means:
 - Foundation applied inside an account, subscription, project, or compartment
