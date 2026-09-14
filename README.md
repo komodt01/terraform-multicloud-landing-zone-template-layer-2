@@ -86,7 +86,7 @@ This Landing Zone reflects architecture-first thinking:
 - Infrastructure layout is standardized across clouds
 - Each cloud implementation expresses the same pattern
 
-The design rationale is documented in `architecturephilosophy.md`.
+The design rationale is documented in `Architecture_Philosophy.md`.
 
 ---
 
