@@ -166,6 +166,10 @@ Replace placeholder identities and fictionalized values for real deployments.
 
 ---
 
+## Case Study
+
+- [Technical Case Study](TECHNICAL_CASE_STUDY.md)
+
 ## Author
 
 Multicloud Landing Zone – Layer 2  
