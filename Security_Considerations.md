@@ -1,179 +1,461 @@
 # Security Considerations
 
-This document outlines key security considerations for the Multicloud Landing Zone – Layer 2 Terraform templates. The goal is to make the architectural intent explicit, not to claim a complete or audited security posture.
+This document describes the security considerations for the Multicloud Landing Zone – Layer 2 Terraform reference templates.
 
-The templates focus on **account/subscription/project-level baselines** for AWS, Azure, GCP, and OCI.
+The objective is to make the security boundaries and assumptions explicit without representing the repository as a complete production security architecture or audited security baseline.
 
----
-
-## 1. Scope and Assumptions
-
-**In scope (Layer 2):**
-
-- Per-account / subscription / project / compartment foundations
-- Baseline networking (VPC/VNet/VCN and subnets)
-- Logging and visibility (flow logs, diagnostic settings, logging groups)
-- Example IAM/RBAC constructs for least-privilege patterns
-
-**Out of scope (Layer 1 and Layer 3):**
-
-- Enterprise identity (SSO, IdPs, federation, multi-factor enforcement)
-- Organization-level guardrails (AWS Organizations/SCPs, Azure Management Groups/Policies, GCP Org Policies, OCI tenancy-wide controls)
-- Application workloads (EC2/VMs, containers, databases, serverless functions)
-- Secrets management and data-plane encryption configurations
-
-**Assumptions:**
-
-- The reader will adapt these templates to their own standards.
-- Real tenants will apply additional policies at the organization/management-group level.
-- Identities referenced (ARNs, object IDs, emails, OCIDs) are placeholders and must be replaced.
+The templates establish foundational resources within an AWS account, Azure subscription, GCP project, or OCI compartment.
 
 ---
 
-## 2. Identity and Access Management
+## 1. Scope
 
-### 2.1 Human Access (Examples Only)
+### In Scope
 
-Each cloud implementation includes **example read-only roles or bindings**:
+The current Layer-2 implementations demonstrate:
 
-- AWS: An IAM role that can be assumed and grants `ReadOnlyAccess`.
-- Azure: A `Reader` role assignment at the resource group scope.
-- GCP: A project-level `roles/viewer` binding.
-- OCI: Example policy statements granting read access (if extended).
+* Virtual network foundations
+* Public and private subnet structures where modeled
+* Basic routing
+* Network telemetry where configured
+* Example IAM/RBAC assignments
+* Resource configuration through Terraform variables
+* Provider-native infrastructure patterns
 
-**Considerations:**
+### Out of Scope
 
-- In real deployments, these roles should be mapped to **groups** managed by an IdP (Entra ID, Okta, Ping, etc.).
-- MFA, conditional access, and strong authentication are expected at the identity provider level.
-- Privileged roles (e.g., admin, security admin) are intentionally **not** created here to avoid promoting over-privileged patterns.
+The repository does not implement:
 
-### 2.2 Workload Identities
+* Enterprise identity federation
+* Enterprise MFA enforcement
+* Organization-level guardrails
+* Complete multi-account or multi-subscription governance
+* Full network inspection architecture
+* Application workloads
+* Kubernetes platforms
+* Secrets-management architecture
+* Enterprise key-management architecture
+* Complete SIEM architecture
+* Formal compliance evidence
 
-These templates intentionally avoid hardcoded credentials. When extended:
-
-- Use AWS IAM roles for compute/services (no access keys on instances).
-- Use Azure managed identities for workloads.
-- Use GCP service accounts with strict IAM bindings.
-- Use OCI dynamic groups + policies for workload identity.
-
----
-
-## 3. Network Security
-
-**Patterns implemented:**
-
-- Segmented networks using per-cloud constructs:
-  - AWS VPC with public and private subnets.
-  - Azure VNet with separate subnets.
-  - GCP VPC with custom subnetwork and firewall rules.
-  - OCI VCN with public and private subnets.
-- Public internet access is confined to “public” tiers.
-- Private subnets are created with no direct internet reachability.
-
-**Additional considerations for real deployments:**
-
-- Add explicit deny/allowlists via:
-  - AWS Security Groups and NACLs.
-  - Azure NSGs.
-  - GCP firewall rules.
-  - OCI security lists / NSGs.
-- Introduce ingress/egress inspection (NGFW, WAF, IDS/IPS) at appropriate tiers.
-- Consider private connectivity (VPN, Direct Connect, ExpressRoute, Cloud Interconnect, FastConnect) for enterprise networks.
+Layer 1 organizational governance and Layer 3 workload security are intentionally separate architectural concerns.
 
 ---
 
-## 4. Logging, Monitoring, and Visibility
+## 2. Identity and Access
 
-Logging is enabled at the network/control plane level:
+The repository uses simple provider-native access-control examples rather than attempting to implement a complete enterprise identity architecture.
 
-- **AWS:** VPC Flow Logs sent to CloudWatch Logs.
-- **Azure:** Diagnostic Settings on VNets to Log Analytics (metrics enabled).
-- **GCP:** VPC Flow Logs enabled on subnets (to Cloud Logging).
-- **OCI:** Example log group for network resources.
+### AWS
 
-**Considerations:**
+The template creates an example IAM role that can be assumed by the configured trusted administrator principal and attaches the AWS-managed `ReadOnlyAccess` policy.
 
-- In production, forward logs to a central SIEM or log analytics platform.
-- Define retention policies in alignment with regulatory and investigative needs.
-- Add alerts for:
-  - Unusual network patterns.
-  - Changes to security groups/firewall rules.
-  - Failed authentication / privilege escalation attempts.
+This demonstrates a basic role-based access pattern.
 
----
+### Azure
 
-## 5. Data Protection
+The template assigns the built-in `Reader` role to a supplied principal at the resource-group scope.
 
-These templates do **not** create storage or data services directly (databases, object storage, etc.). However, when extended:
+This demonstrates Azure RBAC scoping.
 
-- Enforce encryption at rest with cloud-native KMS/Key Vault/Key Management.
-- Enforce encryption in transit (TLS) for application tiers.
-- Apply appropriate key management policies (rotation, separation of duties, access control).
+### GCP
 
----
+The template creates a project-level `roles/viewer` binding for a supplied user.
 
-## 6. Organizational Guardrails (Layer 1)
+This demonstrates project-level IAM assignment.
 
-These templates operate at **Layer 2**. They are intended to sit under stronger, org-level controls such as:
+### OCI
 
-- **AWS:** Organizations, Service Control Policies (SCPs), Control Tower / Landing Zone Accelerator.
-- **Azure:** Management Groups and Azure Policy.
-- **GCP:** Organization node, Folder hierarchy, Org Policy constraints.
-- **OCI:** Tenancy-level policies, compartment strategy.
+The current OCI template does not create an IAM role, dynamic group, or policy assignment.
 
-Those controls should enforce:
+The OCI implementation currently concentrates on the VCN, subnet, routing, and logging foundation.
 
-- Allowed regions and services.
-- Baseline logging and encryption defaults.
-- Restrictions on creating internet-facing resources.
-- Guardrails for IAM changes, key usage, and network changes.
+### Production Considerations
+
+A production identity architecture would normally add:
+
+* Enterprise identity federation
+* Group-based authorization
+* MFA
+* Privileged access management
+* Access lifecycle management
+* Periodic access reviews
+* Separation of duties
+* Workload identity
+* Break-glass procedures
+
+The current examples should therefore be viewed as **IAM/RBAC primitives**, not enterprise identity governance.
 
 ---
 
-## 7. Secrets and Configuration Management
+## 3. Credential Handling
 
-These templates do not configure:
+The Terraform examples do not embed passwords or cloud access keys in the configuration.
 
-- Secrets stores (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager, OCI Vault).
-- Configuration management or drift detection.
+Provider authentication should be supplied through appropriate provider-supported mechanisms outside the repository.
 
-In real environments:
+The example variables contain placeholder identities such as:
 
-- Provision a secret management solution early.
-- Disallow storing secrets in Terraform variable files committed to Git.
-- Consider configuration scanning and policy-as-code (e.g., tfsec, Checkov, OPA/Conftest).
+* AWS principal ARN
+* Azure object ID
+* GCP user email
+* OCI tenancy and compartment OCIDs
 
----
+These values are examples and must be replaced for an actual deployment.
 
-## 8. Threat Model Highlights
+Production implementations should also protect:
 
-The primary threats this Layer-2 design helps mitigate:
-
-- **Unmonitored lateral movement** via lack of network logging.
-- **Flat networks** without segmentation between public and private tiers.
-- **Uncontrolled changes** via lack of baseline IAM/RBAC patterns.
-- **Low visibility** into network flows and control-plane events.
-
-Threats not fully addressed at this layer and requiring additional controls:
-
-- Compromised privileged identities (handled via Layer-1 + IdP).
-- Application-level vulnerabilities and OWASP Top 10.
-- Supply-chain risks in CI/CD and dependencies.
-- Advanced persistent threats and targeted campaigns.
+* Terraform state
+* Provider credentials
+* CI/CD identities
+* Variable files
+* Backend configuration
+* Sensitive outputs
 
 ---
 
-## 9. Limitations and Responsibilities
+## 4. Network Security
+
+The landing-zone templates establish basic network boundaries.
+
+### AWS
+
+The AWS implementation creates:
+
+* VPC
+* Public subnet
+* Private subnet
+* Internet Gateway
+* Public route table
+
+The public subnet is configured to map public IP addresses on launch.
+
+The private subnet does not use the public route-table association.
+
+VPC Flow Logs are enabled for network visibility.
+
+### Azure
+
+The Azure implementation creates:
+
+* VNet
+* Public subnet
+* Private subnet
+
+The template establishes the subnet structure but does not create NSGs, firewalls, WAFs, or private endpoints.
+
+### GCP
+
+The GCP implementation creates:
+
+* Custom VPC
+* Regional subnet
+* VPC Flow Logs
+* An ingress firewall rule allowing TCP/22 from the configured CIDR
+
+The SSH rule is an example and requires review before production use.
+
+### OCI
+
+The OCI implementation creates:
+
+* VCN
+* Internet Gateway
+* Public route table
+* Public subnet
+* Private subnet
+
+The private subnet explicitly prohibits public IP assignment.
+
+### Production Network Controls
+
+A production landing zone would typically evaluate:
+
+* Security groups
+* Network ACLs
+* NSGs
+* Firewall policies
+* Egress filtering
+* WAF
+* Network inspection
+* Private service connectivity
+* DNS architecture
+* VPN or dedicated connectivity
+* Centralized network services
+
+The subnet classification in this repository should not be interpreted as a complete network-security boundary.
+
+---
+
+## 5. Logging and Visibility
+
+Visibility is treated as a foundational architectural capability, but the current implementations provide different levels of telemetry.
+
+### AWS
+
+VPC Flow Logs are configured to send traffic records to CloudWatch Logs.
+
+### Azure
+
+A Log Analytics workspace is created and a VNet diagnostic setting is configured with the metric category represented in the template.
+
+This should not be interpreted as a complete Azure network logging architecture.
+
+### GCP
+
+VPC Flow Logs are enabled on the subnet and use the Google Cloud logging capability associated with the subnet configuration.
+
+### OCI
+
+An OCI Logging log group is created.
+
+The current Terraform does **not** configure a VCN flow-log source that sends network telemetry into the log group.
+
+### Production Logging
+
+A production implementation would evaluate:
+
+* Centralized log routing
+* Retention
+* Immutable or protected storage
+* SIEM integration
+* Alerting
+* Detection engineering
+* Administrative access to logs
+* Regulatory requirements
+* Logging costs
+
+Creating a log destination is not equivalent to implementing a complete monitoring or detection capability.
+
+---
+
+## 6. Data Protection
+
+The current templates do not provision application data stores or implement a complete data-protection architecture.
+
+Production extensions should evaluate:
+
+* Encryption at rest
+* Encryption in transit
+* Key management
+* Key rotation
+* Separation of duties
+* Data classification
+* Data residency
+* Backup protection
+* Data-loss prevention
+
+These controls depend heavily on the workload architecture and therefore remain outside the current Layer-2 foundation.
+
+---
+
+## 7. Organizational Governance
+
+Layer 2 is intended to operate underneath organizational governance.
+
+Examples include:
+
+* AWS Organizations and SCPs
+* Azure Management Groups and Azure Policy
+* GCP Organization Policy
+* OCI tenancy and compartment governance
+
+Layer 1 controls can establish requirements that should not be left to individual workload teams.
+
+Examples include:
+
+* Approved deployment locations
+* Required security services
+* Restrictions on public exposure
+* Identity requirements
+* Logging requirements
+* Protection of security controls
+
+The current repository does not implement those organization-level controls.
+
+---
+
+## 8. Secrets and Configuration Management
+
+The repository does not configure:
+
+* AWS Secrets Manager
+* Azure Key Vault
+* GCP Secret Manager
+* OCI Vault
+
+Those services should be considered when workloads are introduced.
+
+Terraform variable files containing credentials or sensitive configuration should not be committed to source control.
+
+Production implementations should use appropriate secret-management and CI/CD mechanisms.
+
+Configuration drift should also be addressed through:
+
+* Infrastructure-as-code workflows
+* Policy validation
+* Configuration monitoring
+* Change control
+* Periodic assessment
+
+---
+
+## 9. Threat Model Highlights
+
+The Layer-2 foundation primarily addresses **foundational exposure and visibility risks**.
+
+### Network Visibility
+
+Flow logging and diagnostic capabilities can provide evidence of network activity where configured.
+
+This supports investigation and monitoring but does not independently detect malicious activity.
+
+### Network Segmentation
+
+Public and private subnet structures establish an initial architectural separation.
+
+Additional network controls are required to enforce workload-specific communication boundaries.
+
+### Basic Access Control
+
+The example IAM/RBAC assignments demonstrate scoped access rather than unrestricted administrative permissions.
+
+They do not provide complete enterprise authorization governance.
+
+### Configuration Consistency
+
+Terraform provides a repeatable representation of the environment baseline.
+
+This can reduce configuration inconsistency when combined with controlled deployment and validation processes.
+
+---
+
+## 10. Threats Requiring Additional Layers
+
+Several important threats remain outside this repository.
+
+### Privileged Identity Compromise
+
+Requires controls such as:
+
+* Strong authentication
+* Privileged access management
+* Conditional access
+* Access reviews
+* Break-glass governance
+* Detection and response
+
+### Application Vulnerabilities
+
+Application security requires:
+
+* Secure development practices
+* SAST
+* DAST
+* Dependency analysis
+* API security
+* Runtime protections
+
+### Supply-Chain Risk
+
+CI/CD and software supply-chain security require additional controls such as:
+
+* Dependency scanning
+* Secrets scanning
+* Artifact integrity
+* Image scanning
+* SBOM
+* Build provenance
+* Deployment gates
+
+### Advanced Threat Detection
+
+The landing zone provides infrastructure visibility but does not implement a complete detection-and-response capability.
+
+That requires security analytics, SIEM integration, threat detection, incident response, and operational processes.
+
+---
+
+## 11. Layer Dependencies
+
+The landing zone should be evaluated as part of the larger cloud architecture.
+
+```text
+Layer 1
+Organizational Governance
+        |
+        v
+Layer 2
+Landing Zone Foundation
+        |
+        v
+Layer 3
+Workloads and Platforms
+```
+
+Examples of dependencies include:
+
+* Layer 1 policies may restrict what Layer 2 can deploy.
+* Layer 2 networking provides the connectivity used by Layer 3 workloads.
+* Layer 3 workloads introduce additional identity, data, and application-security requirements.
+* Centralized logging may span all three layers.
+
+This prevents a landing-zone template from being treated as an isolated security solution.
+
+---
+
+## 12. Production Readiness Considerations
+
+Before using these templates as the basis for production environments, I would evaluate:
+
+* Existing organizational policies
+* Account/subscription/project structure
+* Network address planning
+* Shared network services
+* DNS
+* Identity federation
+* Privileged access
+* Logging architecture
+* SIEM integration
+* Secrets management
+* Key management
+* Backup and recovery
+* Change management
+* Policy validation
+* Infrastructure testing
+* Exception handling
+* Cost management
+* Regulatory requirements
+
+The exact implementation should reflect the organization's risk profile and operating model.
+
+---
+
+## 13. Limitations
 
 This repository:
 
-- Does not claim to be compliant with any specific standard.
-- Does not replace formal security architecture, risk assessment, or threat modeling.
-- Must be adapted, extended, and integrated into an organization’s broader security program.
+* Is a reference architecture rather than a production landing-zone product.
+* Does not claim formal security certification.
+* Does not establish compliance by itself.
+* Does not replace security architecture or risk assessment.
+* Does not provide complete enterprise identity governance.
+* Does not provide complete network-security enforcement.
+* Does not provide complete monitoring or detection.
+* Does not provide workload security.
 
-The user is responsible for:
+The Terraform should be reviewed, tested, and adapted before use in any real environment.
 
-- Reviewing and modifying all configurations.
-- Applying appropriate regulatory and internal controls.
-- Performing testing, validation, and ongoing monitoring.
+---
 
+## Summary
+
+The security objective of Layer 2 is to establish a **repeatable cloud-environment foundation** with basic network structure, visibility, and access-control primitives.
+
+The repository deliberately does not attempt to solve every security problem at this layer.
+
+The stronger architecture is:
+
+**Organizational governance → cloud foundation → workload security**
+
+Each layer has a defined responsibility, and the security posture emerges from their combination rather than from the landing zone alone.
