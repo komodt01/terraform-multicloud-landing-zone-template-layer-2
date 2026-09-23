@@ -2,150 +2,495 @@
 
 ## Scenario
 
-Organizations operating across multiple cloud providers often need a consistent security baseline without forcing every cloud into an identical implementation model.
+Organizations operating across multiple cloud providers need a repeatable cloud foundation without assuming that AWS, Azure, Google Cloud, and OCI implement security in the same way.
 
-For this project, I designed a Layer-2 landing zone reference architecture spanning AWS, Azure, Google Cloud, and Oracle Cloud Infrastructure (OCI). The focus was the foundation inside an individual cloud account, subscription, project, or compartment.
+For this project, I developed a **Layer-2 multicloud landing-zone reference architecture** using Terraform across those four providers.
 
-I deliberately separated this layer from organization-wide governance. Controls such as AWS Organizations and SCPs, Azure Management Groups and Azure Policy, and GCP Organization Policies belong at a higher organizational layer and were outside the scope of this project.
+The focus is the foundation inside an existing cloud environment:
 
-The goal was to answer a narrower architecture question:
+* AWS account
+* Azure subscription
+* GCP project
+* OCI compartment
 
-**What security capabilities should exist inside a cloud environment before application workloads are introduced?**
+The architecture deliberately separates this layer from organizational governance and workload-specific security.
+
+The central question was:
+
+> **What foundational capabilities should exist inside a cloud environment before application workloads are introduced?**
+
+---
 
 ## Architecture Approach
 
-I used four common control areas as the baseline across the cloud providers:
+I organized the Layer-2 foundation around four architectural concerns:
 
-- Network segmentation
-- Logging and telemetry
-- Identity and access controls
-- Infrastructure standardization
+* Network structure
+* Network or platform visibility
+* Basic access-control primitives
+* Repeatable infrastructure configuration
 
-The objective was consistency of **security intent**, not identical technical implementations.
+The objective was to establish consistent **architectural intent**, not identical cloud implementations.
 
-For example, networking is expressed through a VPC in AWS and GCP, a VNet in Azure, and a VCN in OCI. The services differ, but the architectural requirement remains the same: establish controlled network boundaries and separate public and private resources before workloads are deployed.
+For example:
 
-The same principle applies to logging and identity. Each cloud uses its native capabilities rather than introducing an abstraction simply to make the implementations look identical.
+* AWS uses a VPC.
+* Azure uses a VNet.
+* GCP uses a custom VPC.
+* OCI uses a VCN.
 
-## Why I Separated Layer 1 and Layer 2
+The same principle applies to telemetry and access control.
 
-One of the most important decisions was defining the boundary between organizational governance and the workload-ready cloud foundation.
+Each provider uses its native mechanisms rather than forcing a common abstraction over fundamentally different cloud architectures.
 
-I treated the layers as:
+---
 
-**Layer 1 — Organizational governance**
+## Layer Separation
 
-Enterprise-wide policies, account structures, management groups, organization policies, SCPs, centralized identity requirements, and other controls applied above individual environments.
+One of the most important design decisions was separating the cloud foundation from the controls above and below it.
 
-**Layer 2 — Cloud environment baseline**
+### Layer 1 — Organizational Governance
 
-Networking, logging, monitoring, IAM/RBAC primitives, and security controls established inside an account, subscription, project, or compartment.
+Layer 1 establishes enterprise-wide requirements and governance.
 
-**Layer 3 — Workloads and platforms**
+Examples include:
 
-Applications, Kubernetes platforms, CI/CD pipelines, databases, APIs, and other workload-specific infrastructure.
+* AWS Organizations and SCPs
+* Azure Management Groups and Azure Policy
+* GCP Organization Policy
+* OCI tenancy and compartment governance
+* Enterprise identity requirements
+* Centralized security standards
 
-Keeping those responsibilities separate prevents the landing-zone template from implying that account-level Terraform can replace enterprise governance.
+These controls establish requirements above individual cloud environments.
 
-It also makes the architecture easier to extend. Layer 2 can provide a repeatable foundation while Layer 1 and Layer 3 evolve independently.
+### Layer 2 — Cloud Environment Foundation
+
+This repository establishes foundational infrastructure inside the governed environment.
+
+Examples include:
+
+* Virtual networks
+* Subnets
+* Routing
+* Network telemetry where implemented
+* Basic IAM/RBAC examples
+* Terraform-based configuration
+
+### Layer 3 — Workloads and Platforms
+
+Layer 3 contains workload-specific architecture such as:
+
+* Applications
+* Kubernetes
+* Databases
+* APIs
+* CI/CD platforms
+* Workload identity
+* Application security
+* Data protection
+
+Keeping these layers distinct prevents a landing-zone template from being represented as the organization's complete cloud-security architecture.
+
+---
 
 ## Cross-Cloud Design Decision
 
-A major design consideration was deciding what should be standardized across clouds and what should remain cloud-native.
+The primary design decision was determining what should be standardized and what should remain provider-specific.
 
-I chose to standardize the **control objectives** rather than the services themselves.
+I chose to standardize the **architectural requirement**, not the technical implementation.
 
 The pattern is:
 
-**Common requirement → cloud-native implementation**
+```text id="9m5f3n"
+Enterprise Requirement
+        |
+        v
+Layer-2 Capability
+        |
+        v
+Cloud-Native Implementation
+```
 
-For networking, each environment receives an appropriate virtual network and subnet structure.
+For example, the requirement may be to establish a defined network boundary.
 
-For telemetry, the design enables the cloud provider's native logging capabilities.
+The implementation becomes:
 
-For identity, the design favors scoped IAM/RBAC assignments and workload identity mechanisms rather than embedding long-lived credentials.
+* AWS VPC and subnets
+* Azure VNet and subnets
+* GCP VPC and subnet
+* OCI VCN and subnets
 
-This avoids a common multicloud problem: creating artificial technical uniformity that hides meaningful differences between cloud providers.
+This approach avoids artificial technical symmetry.
 
-In a production environment, I would expect the enterprise architecture and security standards to define the required control outcomes while individual cloud implementations satisfy those requirements using the appropriate native services.
+A multicloud architecture should make provider differences explicit rather than hiding them behind an abstraction that does not accurately represent the underlying platforms.
 
-## Identity and Credential Strategy
+---
 
-Another design principle was avoiding hardcoded credentials.
+# AWS Foundation
 
-The baseline favors native workload identity mechanisms and scoped permissions. This reduces reliance on long-lived secrets and supports least-privilege access patterns.
+The AWS implementation creates:
 
-A production implementation would extend this with enterprise identity federation, privileged-access controls, lifecycle management, MFA requirements, access reviews, and centralized identity governance.
+* VPC
+* Public subnet
+* Private subnet
+* Internet Gateway
+* Public route table
+* VPC Flow Logs
+* CloudWatch Log Group
+* VPC Flow Logs IAM role
+* Example read-only IAM role
 
-Those capabilities were intentionally not represented as being solved by this Layer-2 template.
+The public subnet is configured to map public IP addresses on launch.
 
-## Logging and Visibility
+The private subnet is not associated with the public route table.
 
-I treated telemetry as part of the foundation rather than something added after applications are deployed.
+VPC Flow Logs provide network telemetry through CloudWatch Logs.
 
-The reference implementations use native logging capabilities such as AWS VPC Flow Logs, Azure diagnostic capabilities and Log Analytics, GCP VPC Flow Logs and Cloud Logging, and OCI Logging.
+The IAM example demonstrates a role-based read-only access pattern.
 
-The purpose is to ensure that the environment begins producing security-relevant telemetry as part of its baseline.
+### Architectural Boundary
 
-The project does not attempt to design an enterprise SIEM architecture. In a production environment, I would evaluate centralized log routing, retention requirements, security analytics, alerting, access controls, regulatory requirements, and cost before determining the final logging architecture.
+This implementation does not create:
+
+* AWS Organizations
+* SCP attachments
+* Multi-account hierarchy
+* Enterprise federation
+* Complete network inspection
+
+Those capabilities belong to higher-level architecture.
+
+---
+
+# Azure Foundation
+
+The Azure implementation creates:
+
+* Resource Group
+* Virtual Network
+* Public subnet
+* Private subnet
+* Log Analytics workspace
+* VNet diagnostic setting
+* Reader role assignment
+
+The VNet establishes the network and subnet foundation.
+
+The diagnostic configuration connects the VNet to Log Analytics and represents the metric configuration included in the Terraform.
+
+It should not be interpreted as a complete Azure network-logging architecture.
+
+The Reader assignment demonstrates resource-group-scoped Azure RBAC.
+
+### Architectural Boundary
+
+The current implementation does not create:
+
+* NSGs
+* Azure Policy
+* Management Groups
+* Private Endpoints
+* Enterprise identity federation
+* Network firewalls
+
+These are potential extensions rather than implemented capabilities.
+
+---
+
+# GCP Foundation
+
+The GCP implementation creates:
+
+* Custom VPC
+* Regional subnet
+* VPC Flow Logs
+* Example ingress firewall rule
+* Project-level Viewer IAM binding
+
+Automatic subnet creation is disabled so that the network structure is explicitly defined.
+
+VPC Flow Logs are enabled on the subnet.
+
+The firewall example permits TCP/22 from the configured CIDR.
+
+That rule is intentionally an example rather than a claim of production-ready SSH exposure.
+
+The Viewer binding demonstrates project-level IAM scoping.
+
+### Architectural Boundary
+
+The implementation does not establish:
+
+* GCP organization hierarchy
+* Organization Policy
+* Enterprise identity federation
+* Complete firewall architecture
+* Workload identity architecture
+
+Those capabilities belong to broader platform and governance designs.
+
+---
+
+# OCI Foundation
+
+The OCI implementation creates:
+
+* VCN
+* Internet Gateway
+* Public route table
+* Public subnet
+* Private subnet
+* OCI Logging log group
+
+The public subnet permits public IP assignment and uses the Internet Gateway route.
+
+The private subnet explicitly prohibits public IP assignment.
+
+The Logging log group provides a logging-destination foundation.
+
+The current Terraform does **not** configure a VCN flow-log source that sends network telemetry into that log group.
+
+The `tenant_ocid` variable is retained as an extension point but is not currently used by the resources.
+
+### Architectural Boundary
+
+The implementation does not create:
+
+* Dynamic groups
+* IAM policies
+* Security Zones
+* Tenancy-wide governance
+* VCN flow-log configuration
+
+Those are potential extensions rather than current capabilities.
+
+---
+
+## Identity Architecture
+
+Identity was deliberately kept at the **basic IAM/RBAC primitive level**.
+
+The current implementations demonstrate:
+
+* AWS IAM role
+* Azure Reader assignment
+* GCP Viewer binding
+
+OCI does not currently create an IAM assignment.
+
+The architecture avoids embedding cloud credentials directly into the Terraform configuration.
+
+This should not be confused with implementing enterprise identity architecture.
+
+A production landing zone would normally integrate with:
+
+* Enterprise identity providers
+* Federation
+* MFA
+* Privileged access management
+* Access lifecycle management
+* Access reviews
+* Workload identity
+* Break-glass procedures
+
+Those controls belong to the broader identity architecture rather than this template.
+
+---
+
+## Network Architecture
+
+Network segmentation is treated as a foundational capability.
+
+The implementations establish public/private distinctions where modeled, but the subnet structure is only the beginning of the network-security architecture.
+
+Production environments may require:
+
+* Security groups
+* NSGs
+* Network ACLs
+* Firewall inspection
+* WAF
+* Egress controls
+* Private connectivity
+* DNS architecture
+* Centralized network services
+* Network monitoring
+
+A landing zone should therefore establish the foundation while leaving workload-specific communication requirements to later architecture layers.
+
+---
+
+## Visibility Architecture
+
+Visibility was considered during the foundation design rather than as a post-deployment addition.
+
+The current implementations provide different levels of telemetry:
+
+| Provider | Current Capability                      |
+| -------- | --------------------------------------- |
+| AWS      | VPC Flow Logs → CloudWatch Logs         |
+| Azure    | VNet diagnostic setting → Log Analytics |
+| GCP      | VPC Flow Logs → Cloud Logging           |
+| OCI      | OCI Logging log group                   |
+
+These should not be interpreted as equivalent implementations.
+
+The next architectural step in a production environment would be determining:
+
+* Which events are required
+* Where logs are centralized
+* Retention requirements
+* Access controls
+* SIEM integration
+* Detection requirements
+* Regulatory requirements
+* Cost constraints
+
+The landing zone provides the foundation; the enterprise monitoring architecture determines the complete visibility model.
+
+---
 
 ## Security Boundary
 
-This project intentionally does not represent a complete production landing zone.
+A key design decision was explicitly defining what this repository does **not** attempt to solve.
 
-The Layer-2 design establishes foundational controls, but several capabilities would normally exist elsewhere in an enterprise architecture, including:
+The Layer-2 foundation does not provide:
 
-- Organization-wide preventive policies
-- Enterprise identity federation and lifecycle governance
-- Centralized SIEM and security operations
-- Policy-as-code enforcement
-- Enterprise key-management strategy
-- Formal change and exception processes
-- Budget and FinOps controls
-- Workload-specific security controls
-- Independent compliance validation
+* Complete organizational governance
+* Enterprise identity
+* Full privileged-access architecture
+* Complete network inspection
+* Complete SIEM architecture
+* Secrets management
+* Enterprise key management
+* Application security
+* CI/CD security
+* Workload-specific Zero Trust architecture
+* Formal compliance validation
 
-Making those limitations explicit was important because a Terraform deployment alone should not be represented as establishing an organization's complete cloud-security posture.
+These limitations are intentional.
 
-## Compliance Considerations
+A landing zone becomes easier to govern when each architectural layer has a clearly defined responsibility.
 
-I mapped elements of the architecture to security frameworks such as NIST SP 800-53, ISO 27001, and CIS guidance to show how technical controls can support broader security requirements.
+---
 
-I treated these mappings as architectural traceability rather than evidence of compliance.
+## Compliance Approach
 
-A production compliance determination would require additional organizational processes, operating evidence, control testing, documentation, and independent validation beyond the infrastructure represented in this repository.
+I included illustrative mappings to security frameworks such as:
+
+* NIST SP 800-53
+* ISO/IEC 27001
+* CIS Controls and cloud benchmarks
+
+The purpose is **architectural traceability**.
+
+The mapping helps identify how foundational capabilities may contribute to broader control objectives.
+
+It does not establish compliance.
+
+A production compliance determination would require:
+
+* Control ownership
+* Policies and procedures
+* Risk assessment
+* Operating evidence
+* Control testing
+* Monitoring
+* Remediation
+* Independent validation where required
+
+---
 
 ## Terraform's Role
 
-Terraform is the implementation mechanism for the reference architecture, not the primary purpose of the project.
+Terraform is the implementation mechanism rather than the architectural objective.
 
-I used it because infrastructure as code makes the cloud baselines repeatable, reviewable, and easier to compare across providers.
+The architectural sequence is:
 
-The architectural decisions come first: security boundaries, control objectives, identity approach, network segmentation, telemetry requirements, and layer ownership. Terraform expresses those decisions as deployable infrastructure.
+```text id="v5gjbr"
+Security / Business Requirement
+            |
+            v
+Architecture Decision
+            |
+            v
+Provider-Native Capability
+            |
+            v
+Terraform Implementation
+            |
+            v
+Validation
+```
+
+This keeps the infrastructure code subordinate to the architecture.
+
+Terraform provides repeatability and reviewability, but the presence of Terraform code does not by itself establish that a security requirement has been satisfied.
+
+---
 
 ## Production Evolution
 
-If I were extending this reference architecture into an enterprise implementation, I would first establish the organization's Layer-1 governance model and determine how environments are provisioned and governed at scale.
+If extending this reference architecture into an enterprise landing zone, I would address the next capabilities based on organizational requirements.
 
-From there, I would evaluate:
+### Governance
 
-- Enterprise identity and privileged-access integration
-- Centralized logging and SIEM architecture
-- Policy-as-code and configuration enforcement
-- Encryption and key-management requirements
-- Private connectivity and egress controls
-- DNS and shared-network services
-- Security monitoring and incident-response integration
-- Cost and resource-governance controls
-- Environment-specific requirements
-- CI/CD controls for landing-zone changes
+* Multi-account or subscription hierarchy
+* Organization policies
+* Policy-as-code
+* Exception management
+* Change governance
 
-The exact implementation would depend on the organization's regulatory requirements, operating model, cloud strategy, threat model, and existing security services.
+### Identity
 
-## Key Takeaway
+* Enterprise federation
+* Privileged access
+* MFA
+* Workload identity
+* Access lifecycle
 
-The main lesson from this project was that multicloud standardization does not require making every cloud look technically identical.
+### Network
 
-The more useful architecture pattern is to establish **consistent security outcomes and clear control ownership**, then implement those requirements using the capabilities appropriate to each cloud.
+* Shared networking
+* Private connectivity
+* DNS
+* Egress controls
+* Network inspection
 
-By separating organizational governance, cloud-environment foundations, and workload controls, the architecture creates clearer boundaries and provides a foundation that can evolve without treating a Terraform template as the entire cloud-security program.
+### Visibility
+
+* Centralized logging
+* SIEM integration
+* Detection engineering
+* Alerting
+* Evidence retention
+
+### Platform Security
+
+* Secrets management
+* Key management
+* Kubernetes security
+* CI/CD security
+* Workload protection
+
+The sequence should be driven by the organization's risk profile, operating model, regulatory requirements, and existing security capabilities.
+
+---
+
+## Key Architectural Lesson
+
+The main lesson from this project is that multicloud standardization does not require identical infrastructure.
+
+The stronger pattern is:
+
+> **Define the common security and architectural outcome, establish clear control ownership, and use the provider-native mechanism that best implements that requirement.**
+
+Layer 1 establishes organizational governance.
+
+Layer 2 establishes the cloud environment foundation.
+
+Layer 3 secures the workloads and platforms.
+
+That separation creates a landing-zone architecture that can evolve without turning a Terraform template into a claim of complete cloud-security coverage.
+::
