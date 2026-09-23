@@ -1,209 +1,396 @@
-# Compliance Mapping (Illustrative)
+# Compliance Mapping — Illustrative
 
-This document provides an **illustrative** mapping between the Layer-2 Multicloud Landing Zone patterns and common control frameworks. It is *not* a formal compliance attestation, but a helpful reference for how these templates can support broader compliance objectives.
+This document provides an **illustrative mapping** between the Layer-2 Multicloud Landing Zone patterns and common security-control objectives.
 
-Frameworks referenced:
+It is not a compliance attestation, certification, audit result, or statement that the Terraform configuration satisfies any framework requirement by itself.
 
-- NIST SP 800-53 (Rev. 5 style families)
-- ISO/IEC 27001 (Annex A themes)
-- CIS Controls / cloud benchmarks (high level)
+The mapping is intended to show how the architecture may contribute to broader security and governance objectives when combined with organizational processes and additional controls.
+
+Frameworks referenced include:
+
+* NIST SP 800-53 Rev. 5
+* ISO/IEC 27001 Annex A
+* CIS Controls and relevant cloud-security benchmarks
 
 ---
 
 ## 1. Identity and Access Management
 
-**Relevant patterns in this repo:**
+### Patterns Represented
 
-- Example read-only IAM roles / RBAC assignments.
-- Use of native identity primitives (roles, assignments, bindings, policies).
-- Avoidance of hardcoded credentials in code.
+The repository demonstrates basic provider-native access-control patterns:
 
-**NIST 800-53 (examples):**
+* AWS IAM role with read-only access
+* Azure Reader role assignment
+* GCP Viewer IAM binding
+* Avoidance of hardcoded cloud credentials in the Terraform configuration
 
-- **AC-1, AC-2:** Access control policy & account management.
-- **AC-3, AC-6:** Access enforcement and least privilege.
-- **IA-2:** Identification and authentication (users).
-- **IA-5:** Authenticator management (ties into IdP and MFA outside this repo).
+The OCI implementation does not currently create an IAM assignment or policy.
 
-**ISO/IEC 27001 (Annex A) (examples):**
+### NIST SP 800-53 — Examples
 
-- **A.5.15:** Access control.
-- **A.5.16:** Identity management.
-- **A.8.2:** Information access restriction.
-- **A.8.3:** User access provisioning.
+* **AC-2:** Account management
+* **AC-3:** Access enforcement
+* **AC-6:** Least privilege
+* **IA-2:** Identification and authentication
+* **IA-5:** Authenticator management
 
-**CIS (examples):**
+### ISO/IEC 27001 — Examples
 
-- **CIS Control 6:** Access control management.
-- **CIS Control 16:** Application software security (indirectly).
-- Cloud benchmarks: IAM configuration best practices (e.g., AWS, Azure, GCP specific).
+* **A.5.15:** Access control
+* **A.5.16:** Identity management
+* **A.8.2:** Privileged access rights
+* **A.8.3:** Information access restriction
 
-**Notes:**
+### CIS — Examples
 
-- This repo shows *patterns* (roles, bindings) and not full identity governance.
-- Full compliance requires integration with SSO, IdP, MFA, and lifecycle management processes.
+* **CIS Control 5:** Account management
+* **CIS Control 6:** Access control management
+* Relevant cloud-provider IAM benchmarks
+
+### Considerations
+
+The repository demonstrates access-control primitives rather than complete identity governance.
+
+Production implementations would additionally require:
+
+* Enterprise identity federation
+* Group-based authorization
+* MFA
+* Privileged access management
+* Access lifecycle management
+* Access reviews
+* Separation of duties
 
 ---
 
 ## 2. Network Security and Segmentation
 
-**Relevant patterns in this repo:**
+### Patterns Represented
 
-- Creation of virtual network constructs (VPC/VNet/VPC/VCN).
-- Public and private subnet segmentation.
-- Basic firewall / security group examples (esp. GCP firewall, Azure NSG hooks, OCI subnet settings).
+The repository establishes foundational network structures:
 
-**NIST 800-53 (examples):**
+* AWS VPC with public and private subnets
+* Azure VNet with separate subnets
+* GCP custom VPC with a regional subnet and firewall rule
+* OCI VCN with public and private subnets
 
-- **SC-7:** Boundary protection.
-- **SC-32:** System partitioning.
-- **AC-4:** Information flow enforcement.
+The examples establish initial network boundaries but do not constitute a complete network-security architecture.
 
-**ISO/IEC 27001 (Annex A):**
+### NIST SP 800-53 — Examples
 
-- **A.8.20:** Network security.
-- **A.8.21:** Security of network services.
-- **A.8.23:** Segregation in networks.
+* **SC-7:** Boundary protection
+* **SC-32:** System partitioning
+* **AC-4:** Information flow enforcement
 
-**CIS:**
+### ISO/IEC 27001 — Examples
 
-- **CIS Control 4:** Secure configuration of enterprise assets and software.
-- **CIS Control 12:** Network infrastructure management.
+* **A.8.20:** Networks security
+* **A.8.21:** Security of network services
+* **A.8.22:** Segregation of networks
 
-**Notes:**
+### CIS — Examples
 
-- These templates define the logical segmentation; further hardening (e.g., WAF, NGFW, east-west firewalling) should be added for production workloads.
+* **CIS Control 4:** Secure configuration
+* **CIS Control 12:** Network infrastructure management
+
+### Considerations
+
+Production environments may require additional controls such as:
+
+* AWS Security Groups and NACLs
+* Azure NSGs
+* GCP firewall policies
+* OCI security lists or NSGs
+* Network firewalls
+* WAF
+* Egress controls
+* Private connectivity
+* Network inspection
+* DNS security
+
+The current Azure implementation does not create an NSG, and the GCP SSH firewall rule is an example configuration requiring workload-specific review.
 
 ---
 
-## 3. Logging, Monitoring, and Audit Trails
+## 3. Logging, Monitoring, and Auditability
 
-**Relevant patterns in this repo:**
+### Patterns Represented
 
-- Enabling flow logs and diagnostics:
-  - AWS: VPC Flow Logs → CloudWatch Logs.
-  - Azure: VNet diagnostics → Log Analytics.
-  - GCP: VPC Flow Logs → Cloud Logging.
-  - OCI: Logging via log groups.
+The implementations provide different levels of network or platform telemetry:
 
-**NIST 800-53:**
+* **AWS:** VPC Flow Logs → CloudWatch Logs
+* **Azure:** VNet diagnostic setting → Log Analytics, with the metric configuration represented in the template
+* **GCP:** VPC Flow Logs enabled on the subnet
+* **OCI:** OCI Logging log group created as a logging destination foundation
 
-- **AU-2:** Event logging.
-- **AU-6:** Audit review, analysis, and reporting.
-- **AU-8:** Time stamps.
-- **SI-4:** System monitoring.
+The provider implementations are therefore not technically equivalent.
 
-**ISO/IEC 27001 (Annex A):**
+### NIST SP 800-53 — Examples
 
-- **A.8.15:** Logging.
-- **A.8.16:** Monitoring activities.
-- **A.8.12:** Privileged access rights (when combined with IAM).
+* **AU-2:** Event logging
+* **AU-6:** Audit record review, analysis, and reporting
+* **AU-8:** Time stamps
+* **SI-4:** System monitoring
 
-**CIS:**
+### ISO/IEC 27001 — Examples
 
-- **CIS Control 8:** Audit log management.
-- **CIS Control 13:** Network monitoring and defense.
+* **A.8.15:** Logging
+* **A.8.16:** Monitoring activities
 
-**Notes:**
+### CIS — Examples
 
-- These templates create the **log sources**; centralization, retention, correlation, and alerting integrations (e.g., SIEM) must be implemented to fully meet control intent.
+* **CIS Control 8:** Audit log management
+* **CIS Control 13:** Network monitoring and defense
+
+### Considerations
+
+The current repository does not implement a complete enterprise monitoring architecture.
+
+Production environments should evaluate:
+
+* Centralized log routing
+* Retention
+* Protected log storage
+* SIEM integration
+* Alerting
+* Detection engineering
+* Access controls
+* Regulatory retention requirements
+
+In particular, the OCI template creates the logging group but does not configure a VCN flow-log source that sends network telemetry into it.
 
 ---
 
 ## 4. Configuration Management and Infrastructure as Code
 
-**Relevant patterns in this repo:**
+### Patterns Represented
 
-- Terraform-based infrastructure definitions.
-- Separation of configuration (variables) from logic (main.tf).
-- Version-control friendliness and `.gitignore` usage.
+The repository uses Terraform to represent infrastructure configuration.
 
-**NIST 800-53:**
+The implementations use:
 
-- **CM-2:** Baseline configuration.
-- **CM-3:** Configuration change control.
-- **CM-6:** Configuration settings.
+* Provider-specific Terraform resources
+* Variables for environment-specific values
+* Outputs for selected resource identifiers
+* Example variable files
+* Version-controlled infrastructure definitions
 
-**ISO/IEC 27001 (Annex A):**
+### NIST SP 800-53 — Examples
 
-- **A.8.9:** Configuration management.
-- **A.8.33:** Test and production environment separation.
-- **A.5.36:** Change management.
+* **CM-2:** Baseline configuration
+* **CM-3:** Configuration change control
+* **CM-6:** Configuration settings
 
-**CIS:**
+### ISO/IEC 27001 — Examples
 
-- **CIS Control 4:** Secure configuration of enterprise assets.
-- **CIS Control 11:** Data recovery processes (indirect, via reproducibility).
+* **A.8.9:** Configuration management
+* **A.8.32:** Change management
 
-**Notes:**
+### CIS — Examples
 
-- Formal change control processes, approvals, and CI/CD workflows are required outside this repo to fully satisfy these controls.
+* **CIS Control 4:** Secure configuration of enterprise assets and software
 
----
+### Considerations
 
-## 5. Governance and Organizational Controls (Layer 1)
+Terraform alone does not establish formal change control.
 
-This repository is **Layer 2** only. However, it aligns with and prepares for Layer-1 governance controls such as:
+Production implementations should add:
 
-- AWS Organizations & SCPs, Control Tower / Landing Zone Accelerator.
-- Azure Management Groups and Azure Policy.
-- GCP Organization policies and folder structure.
-- OCI compartment hierarchy and tenancy-level policies.
-
-**NIST 800-53:**
-
-- **PM-1, PM-9:** Information security program and risk management strategy.
-- **PL-2:** System and communications protection planning.
-- **CA-2, CA-7:** Assessments and continuous monitoring.
-
-**ISO/IEC 27001 (Annex A):**
-
-- **A.5.1–A.5.4:** Information security policies and roles.
-- **A.5.7:** Threat intelligence (when combined with monitoring).
-- **A.6:** Organization of information security.
-
-**Notes:**
-
-- Actual governance requires policy definition, documented procedures, risk assessments, and ongoing oversight.
+* Code review
+* CI/CD validation
+* Approval workflows
+* State protection
+* Drift detection
+* Policy-as-code
+* Change records
+* Separation of deployment duties
 
 ---
 
-## 6. Data Protection and Privacy
+## 5. Governance and Organizational Controls
 
-Although this Layer-2 repo does not provision data services directly, the network and logging constructs support:
+This repository represents **Layer 2**.
 
-- Protection of data in transit via proper segmentation and TLS termination (once workloads are added).
-- Monitoring of data flows for anomalies via flow logs and diagnostics.
+Organizational governance is primarily a Layer-1 concern.
 
-Controls potentially supported once extended with data services:
+Relevant mechanisms include:
 
-- **NIST:** SC-12, SC-13 (cryptographic protection), MP-5 (media transport).
-- **ISO 27001:** A.8.24–A.8.29 (information classification and handling), A.8.12 (privileged access).
-- **CIS:** Controls related to data protection and data access control.
+* AWS Organizations and SCPs
+* Azure Management Groups and Azure Policy
+* GCP Organization Policy
+* OCI tenancy and compartment governance
+
+### NIST SP 800-53 — Examples
+
+* **PM-1:** Information security program plans
+* **PM-9:** Risk management strategy
+* **PL-2:** System and communications protection planning
+* **CA-2:** Control assessments
+* **CA-7:** Continuous monitoring
+
+### ISO/IEC 27001 — Examples
+
+* **A.5.1:** Policies for information security
+* **A.5.2:** Information security roles and responsibilities
+* **A.5.4:** Management responsibilities
+* **A.6:** People controls
+
+### Considerations
+
+Layer-1 governance requires more than Terraform resources.
+
+Organizations also need:
+
+* Policy ownership
+* Risk assessment
+* Governance procedures
+* Exception management
+* Approval authorities
+* Continuous oversight
+* Evidence collection
+
+The Layer-2 foundation should operate within those higher-level controls.
 
 ---
 
-## 7. Limitations of This Mapping
+## 6. Data Protection
 
-- This mapping is **illustrative**, not exhaustive.
-- Control coverage depends on:
-  - How these templates are instantiated.
-  - What additional controls exist at Layer 1 and Layer 3.
-  - The organization’s policies and procedures surrounding them.
-- Formal compliance requires:
-  - Risk assessments.
-  - Documentation of processes and responsibilities.
-  - Independent validation or audit.
+The current Layer-2 implementation does not provision application data stores.
+
+The network and telemetry foundations can nevertheless support broader data-protection architecture when combined with workload controls.
+
+Potential areas include:
+
+* Encryption in transit
+* Encryption at rest
+* Key management
+* Data classification
+* Data residency
+* Backup protection
+* Access control
+
+### NIST SP 800-53 — Examples
+
+* **SC-8:** Transmission and confidentiality protection
+* **SC-12:** Cryptographic key establishment and management
+* **SC-13:** Cryptographic protection
+
+### ISO/IEC 27001 — Examples
+
+* **A.5.12:** Classification of information
+* **A.5.13:** Labelling of information
+* **A.8.24:** Use of cryptography
+* **A.8.25–A.8.29:** Secure development and related controls
+
+### Considerations
+
+These controls require additional workload, data, and key-management architecture.
+
+They should not be considered implemented by the landing-zone Terraform alone.
+
+---
+
+## 7. Security Architecture Support
+
+The landing zone provides infrastructure foundations that can support additional security architecture.
+
+Examples include:
+
+* Network segmentation
+* Network telemetry
+* Basic access-control boundaries
+* Repeatable infrastructure configuration
+
+Those capabilities can become inputs to higher-level security controls such as:
+
+* Zero Trust architecture
+* Centralized security monitoring
+* Workload identity
+* Privileged access management
+* Application security
+* Data-security controls
+
+The relationship is architectural rather than a claim that those higher-level controls are implemented here.
+
+---
+
+## 8. Control Responsibility by Layer
+
+| Security Concern                        | Primary Layer      |
+| --------------------------------------- | ------------------ |
+| Organizational guardrails               | Layer 1            |
+| Account/subscription/project governance | Layer 1 / Layer 2  |
+| Network foundation                      | Layer 2            |
+| Basic IAM/RBAC primitives               | Layer 2            |
+| Centralized identity                    | Layer 1            |
+| Workload identity                       | Layer 3            |
+| Application security                    | Layer 3            |
+| Data protection                         | Layer 3            |
+| CI/CD security                          | Layer 3 / Platform |
+| Centralized detection                   | Cross-layer        |
+
+This separation helps prevent a foundational Terraform template from being treated as the complete security solution.
+
+---
+
+## 9. Evidence Considerations
+
+The Terraform repository itself is not sufficient compliance evidence.
+
+Depending on the control, useful production evidence could include:
+
+* Terraform plans and apply records
+* IAM/RBAC configuration
+* Network configuration
+* Policy assignments
+* Logging configuration
+* Cloud audit records
+* Compliance results
+* Access reviews
+* Change approvals
+* Exception records
+* Monitoring evidence
+
+Evidence should demonstrate that a control is actually implemented and operating within the organization's defined scope.
+
+---
+
+## 10. Limitations
+
+This mapping is:
+
+* Illustrative
+* Non-exhaustive
+* Architecture-oriented
+* Dependent on additional controls
+
+Control relevance and effectiveness depend on:
+
+* How the Terraform is deployed
+* The surrounding Layer-1 governance
+* Workload architecture
+* Organizational procedures
+* Risk assessments
+* Monitoring
+* Validation
+
+The repository does not provide formal compliance certification or audit evidence.
 
 ---
 
 ## Summary
 
-The Layer-2 Multicloud Landing Zone templates provide **foundational** support for several NIST 800-53, ISO/IEC 27001, and CIS control objectives, particularly around:
+The Layer-2 Multicloud Landing Zone provides foundational support for several security-control objectives, particularly around:
 
-- Identity & access baselines
-- Network segmentation
-- Logging and visibility
-- Infrastructure-as-code and configuration management
+* Network segmentation
+* Basic access control
+* Network visibility
+* Infrastructure configuration
+* Repeatable cloud foundations
 
-They are intended to be integrated into a broader governance, risk, and compliance strategy—not to stand alone as proof of compliance.
+The architecture is intended to become one component of a broader security and governance program.
+
+The central distinction is:
+
+> **A Terraform implementation can establish a technical control foundation, but compliance depends on the complete control environment: architecture, configuration, governance, operation, evidence, and ongoing validation.**
